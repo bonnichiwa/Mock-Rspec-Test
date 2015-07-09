@@ -2,12 +2,21 @@ class Robot
 
   # attr_reader :items, :health
   attr_accessor :position, :items, :health, :capacity, :equipped_weapon
+  
+  @@all_robots = []
 
+  ATTACK_POWER = 5
+  
   def initialize
     @position = [0,0]
     @items = []
     @health = 100
     @equipped_weapon = nil
+    @@all_robots << self
+  end
+
+  def self.get_robots
+    @@all_robots
   end
 
   def move_left
@@ -30,8 +39,11 @@ class Robot
     can_pick_up = items_weight + object.weight <= 250
 
     if can_pick_up
-      @items << object
-
+      if object.class == BoxOfBolts && health <= 80
+        object.feed(self)
+      else
+        @items << object
+      end
       @equipped_weapon = object if object.is_a?(Weapon)
     end
 
@@ -74,12 +86,19 @@ class Robot
   end
 
   def attack(enemy)
-    if @equipped_weapon
-      @equipped_weapon.hit(enemy)
-    else
-      enemy.wound(5)
-    end
 
+    if (@position[1] - enemy.position[1]).abs <= 1
+      if @equipped_weapon 
+        @equipped_weapon.hit(enemy)
+      else
+        enemy.wound(ATTACK_POWER)
+      end
+    elsif @equipped_weapon.name == "Grenade"
+      if (@position[1] - enemy.position[1]).abs <= 2
+        enemy.wound(@equipped_weapon.damage)
+        @equipped_weapon = nil
+      end
+    end
   end
 
   def attack!(enemy)
@@ -87,7 +106,6 @@ class Robot
       raise StandardError, "Sorry, you cannot attack this thing, it's not a robot!"
     else
       attack(enemy)
-      puts 'yes'
     end
   end
 end
